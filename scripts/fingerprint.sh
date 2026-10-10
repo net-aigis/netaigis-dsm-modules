@@ -5,7 +5,8 @@
 #
 # A fingerprint has exactly these lines in this order. Values are checked
 # strictly because fingerprints come from customer devices via the
-# Cloudflare Worker.
+# Cloudflare Worker (worker/, same rules). Modules must be listed in
+# modules.conf.
 #
 #   netaigis-kmod-fingerprint=1
 #   arch=x86_64
@@ -32,7 +33,7 @@ keys=(netaigis-kmod-fingerprint arch platform dsm_version dsm_build dsm_smallfix
       kernel_release kernel_version vermagic modules)
 patterns=(
   '^1$'
-  '^[a-z0-9_]{1,16}$'
+  '^(x86_64|aarch64)$'
   '^[a-z0-9]{1,32}$'
   '^[0-9]{1,2}\.[0-9]{1,2}$'
   '^[0-9]{1,6}$'
@@ -56,5 +57,14 @@ do
   [[ "$value" =~ ${patterns[$i]} ]] || die "invalid value for ${keys[$i]}: $value"
   i=$((i + 1))
 done < "$file"
+
+known_modules="$(awk '!/^#/ && NF { print $1 }' "$(dirname "$0")/../modules.conf")"
+seen=" "
+for module in $(sed -n 's/^modules=//p' "$file")
+do
+  grep -qx "$module" <<< "$known_modules" || die "unknown module: $module"
+  [[ "$seen" != *" $module "* ]] || die "duplicate module: $module"
+  seen+="$module "
+done
 
 sha256sum "$file" | cut -c1-16

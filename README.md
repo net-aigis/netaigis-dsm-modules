@@ -100,6 +100,29 @@ scripts/pool-build.sh --unsigned fingerprint.txt
 Unsigned entries are only used on the device that built them and are never
 published. The public module always comes from the independent CI build.
 
+### Fingerprint reports
+
+Devices report a fingerprint without a release to a Cloudflare Worker
+(`worker/`), without login or token:
+
+```bash
+curl -X POST --data-binary @fingerprint.txt https://<worker>/v1/fingerprint
+```
+
+The worker validates it with the same rules as `scripts/fingerprint.sh`,
+limits requests per client IP and commits `fingerprints/<id>.txt`; the
+`Module pool` workflow then publishes `fp-<id>`. The worker stores nothing
+else. Its GitHub token (secret `GITHUB_TOKEN`, fine-grained, contents
+read/write on this repository only) never leaves the worker.
+
+Tests and deployment, in `worker/`:
+
+```bash
+node --test
+npx wrangler secret put GITHUB_TOKEN
+npx wrangler deploy
+```
+
 Devices verify the signature, that the manifest starts with their own
 fingerprint, and every module checksum before loading anything:
 
