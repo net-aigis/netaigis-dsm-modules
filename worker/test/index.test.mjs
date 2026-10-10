@@ -9,13 +9,20 @@ const FINGERPRINT = readFileSync(
   "utf8",
 );
 const ID = "75a1aa13335d57eb";
-const ENV = { GITHUB_REPO: "net-aigis/netaigis-dsm-modules", GITHUB_TOKEN: "t" };
+const POOL = "/repos/net-aigis/netaigis-dsm-modules";
+const REPORTED = "/repos/net-aigis/netaigis-dsm-fingerprints";
+const ENV = {
+  POOL_REPO: "net-aigis/netaigis-dsm-modules",
+  FINGERPRINT_REPO: "net-aigis/netaigis-dsm-fingerprints",
+  GITHUB_TOKEN: "t",
+};
 
-// Simulated GitHub API: set of existing paths, records requests.
+// Simulated GitHub API: set of existing paths (with repository prefix),
+// records requests.
 function mockGitHub(existing) {
   const calls = [];
   globalThis.fetch = async (url, init = {}) => {
-    const path = new URL(url).pathname.replace("/repos/net-aigis/netaigis-dsm-modules", "");
+    const path = new URL(url).pathname;
     const method = init.method || "GET";
     calls.push({ method, path, body: init.body });
     if (method === "PUT") {
@@ -60,21 +67,23 @@ test("new fingerprint is committed and queued", async () => {
   assert.deepEqual(await res.json(), { id: ID, status: "queued" });
 
   const put = calls.find((c) => c.method === "PUT");
-  assert.equal(put.path, `/contents/fingerprints/${ID}.txt`);
+  assert.equal(put.path, `${REPORTED}/contents/fingerprints/${ID}.txt`);
+  assert.ok(calls.some((c) => c.path === `${POOL}/releases/tags/fp-${ID}`));
+  assert.ok(!calls.some((c) => c.method !== "GET" && c.path.startsWith(POOL)));
   const body = JSON.parse(put.body);
   assert.equal(atob(body.content), FINGERPRINT);
   assert.equal(body.branch, "main");
 });
 
 test("known fingerprint is not committed again", async () => {
-  const calls = mockGitHub(new Set([`/contents/fingerprints/${ID}.txt`]));
+  const calls = mockGitHub(new Set([`${REPORTED}/contents/fingerprints/${ID}.txt`]));
   const res = await report(FINGERPRINT);
   assert.equal(res.status, 202);
   assert.ok(!calls.some((c) => c.method === "PUT"));
 });
 
 test("published fingerprint", async () => {
-  const calls = mockGitHub(new Set([`/releases/tags/fp-${ID}`]));
+  const calls = mockGitHub(new Set([`${POOL}/releases/tags/fp-${ID}`]));
   const res = await report(FINGERPRINT);
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { id: ID, status: "published" });

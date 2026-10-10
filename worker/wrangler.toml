@@ -4,7 +4,8 @@ compatibility_date = "2026-10-01"
 workers_dev = true
 
 [vars]
-GITHUB_REPO = "net-aigis/netaigis-dsm-modules"
+POOL_REPO = "net-aigis/netaigis-dsm-modules"
+FINGERPRINT_REPO = "net-aigis/netaigis-dsm-fingerprints"
 GITHUB_BRANCH = "main"
 
 # Per client IP: a device reports at most once per boot.
@@ -17,3 +18,4 @@ namespace_id = "1001"
   period = 60
 
 # Secret, set with: npx wrangler secret put GITHUB_TOKEN
+# Fine-grained token with Contents read/write on FINGERPRINT_REPO only.

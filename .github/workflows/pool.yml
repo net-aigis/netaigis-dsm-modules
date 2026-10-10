@@ -1,8 +1,13 @@
 name: Module pool
 
 # Publishes one signed release fp-<id> per device fingerprint in
-# fingerprints/. Devices download it without login.
+# fingerprints/ and in the repository of reported fingerprints, which the
+# report worker writes to. That repository is only read as data: its files
+# are validated by scripts/fingerprint.sh and never executed. Devices
+# download releases without login.
 on:
+  schedule:
+    - cron: "*/30 * * * *"
   push:
     branches: [main]
     paths:
@@ -17,6 +22,9 @@ on:
 permissions:
   contents: read
 
+env:
+  REPORTED_REPO: net-aigis/netaigis-dsm-fingerprints
+
 concurrency:
   group: module-pool
   cancel-in-progress: false
@@ -29,10 +37,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Fetch reported fingerprints
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.REPORTED_REPO }}
+          path: reported
+          persist-credentials: false
+
       - id: plan
         env:
           GH_TOKEN: ${{ github.token }}
-        run: echo "ids=$(scripts/pool-plan.sh)" >> "$GITHUB_OUTPUT"
+        run: echo "ids=$(scripts/pool-plan.sh fingerprints reported/fingerprints)" >> "$GITHUB_OUTPUT"
 
   publish:
     needs: plan
@@ -48,6 +63,13 @@ jobs:
         id: ${{ fromJSON(needs.plan.outputs.ids) }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Fetch reported fingerprints
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.REPORTED_REPO }}
+          path: reported
+          persist-credentials: false
 
       - name: Install build dependencies
         run: |
@@ -65,7 +87,10 @@ jobs:
       - name: Build and sign
         env:
           MODULE_SIGNING_KEY: ${{ secrets.MODULE_SIGNING_KEY }}
-        run: scripts/pool-build.sh "fingerprints/${{ matrix.id }}.txt"
+        run: |
+          fp="fingerprints/${{ matrix.id }}.txt"
+          [[ -f "$fp" ]] || fp="reported/fingerprints/${{ matrix.id }}.txt"
+          scripts/pool-build.sh "$fp"
 
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v4

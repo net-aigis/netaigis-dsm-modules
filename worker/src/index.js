@@ -1,9 +1,11 @@
-// Receives device fingerprints for which the module pool has no release yet
-// and adds them as fingerprints/<id>.txt to the repository. The Module pool
-// workflow then builds, signs and publishes fp-<id>.
+// Receives device fingerprints for which the module pool (POOL_REPO) has no
+// release yet and adds them as fingerprints/<id>.txt to FINGERPRINT_REPO.
+// The Module pool workflow reads that repository as data, then builds,
+// signs and publishes fp-<id>.
 //
 // Devices send nothing but the fingerprint, without login or token. The
-// GitHub token stays in this worker (secret GITHUB_TOKEN).
+// GitHub token stays in this worker (secret GITHUB_TOKEN) and can only
+// write to FINGERPRINT_REPO, never to the build scripts.
 //
 // POST /v1/fingerprint   body: the fingerprint file (text/plain)
 //   200 {"id", "status": "published"}  release fp-<id> exists
@@ -69,8 +71,8 @@ function json(status, body) {
   });
 }
 
-function github(env, path, init = {}) {
-  return fetch(`https://api.github.com/repos/${env.GITHUB_REPO}${path}`, {
+function github(env, repo, path, init = {}) {
+  return fetch(`https://api.github.com/repos/${repo}${path}`, {
     ...init,
     headers: {
       accept: "application/vnd.github+json",
@@ -108,15 +110,15 @@ export async function handleReport(request, env) {
   const branch = env.GITHUB_BRANCH || "main";
   const file = `/contents/fingerprints/${id}.txt`;
 
-  const release = await github(env, `/releases/tags/fp-${id}`);
+  const release = await github(env, env.POOL_REPO, `/releases/tags/fp-${id}`);
   if (release.ok) return json(200, { id, status: "published" });
   if (release.status !== 404) return json(502, { error: `GitHub: ${release.status}` });
 
-  const existing = await github(env, `${file}?ref=${branch}`);
+  const existing = await github(env, env.FINGERPRINT_REPO, `${file}?ref=${branch}`);
   if (existing.ok) return json(202, { id, status: "queued" });
   if (existing.status !== 404) return json(502, { error: `GitHub: ${existing.status}` });
 
-  const created = await github(env, file, {
+  const created = await github(env, env.FINGERPRINT_REPO, file, {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({

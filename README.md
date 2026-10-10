@@ -110,10 +110,15 @@ curl -X POST --data-binary @fingerprint.txt https://<worker>/v1/fingerprint
 ```
 
 The worker validates it with the same rules as `scripts/fingerprint.sh`,
-limits requests per client IP and commits `fingerprints/<id>.txt`; the
-`Module pool` workflow then publishes `fp-<id>`. The worker stores nothing
-else. Its GitHub token (secret `GITHUB_TOKEN`, fine-grained, contents
-read/write on this repository only) never leaves the worker.
+limits requests per client IP and commits `fingerprints/<id>.txt` to the
+separate repository `net-aigis/netaigis-dsm-fingerprints`. The worker
+stores nothing else. Its GitHub token (secret `GITHUB_TOKEN`, fine-grained,
+contents read/write on the fingerprint repository only) can never change
+the build scripts in this repository.
+
+The `Module pool` workflow runs every 30 minutes, reads the fingerprint
+repository as data, skips invalid files and publishes `fp-<id>` for at most
+5 new fingerprints per run.
 
 Tests and deployment, in `worker/`:
 
