@@ -76,18 +76,23 @@ jobs:
       id-token: write
       attestations: write
     steps:
+      # A single artifact is extracted directly into the path, several into
+      # subdirectories; the target name is therefore read from build-info.txt.
       - uses: actions/download-artifact@v8
         with:
-          path: dist
+          path: artifacts
 
       - name: Package
         run: |
-          cd dist
-          for dir in */
+          mkdir dist
+          find artifacts -name build-info.txt | while read -r info
           do
-            target="${dir%/}"
-            tar -czf "$target.tar.gz" -C "$target" .
+            target="$(sed -n 's/^target=//p' "$info")"
+            test -n "$target"
+            tar -czf "dist/$target.tar.gz" -C "$(dirname "$info")" .
           done
+          cd dist
+          ls ./*.tar.gz > /dev/null
           sha256sum ./*.tar.gz | sed 's| \./| |' > SHA256SUMS
           cat SHA256SUMS
 
@@ -96,7 +101,7 @@ jobs:
         with:
           subject-path: |
             dist/*.tar.gz
-            dist/*/*.ko
+            artifacts/**/*.ko
 
       - name: Publish release
         env:
