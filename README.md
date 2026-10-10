@@ -78,7 +78,27 @@ publishes the release `fp-<id>` with:
 
 - `manifest`: the fingerprint followed by `module <name> <sha256>` lines
 - `manifest.sig`: Ed25519 signature of the manifest (`module-signing.pub`)
+- `target.conf`: the Synology sources used, with their SHA-256
 - the modules
+
+The target is `targets/dsm-<version>-<build>_<platform>.conf` if present.
+Otherwise `scripts/target-gen.sh` derives it from Synology's archive: the
+GPL kernel source and toolchain of the fingerprint's DSM build, platform and
+architecture (`x86_64`, `aarch64`). Kernel directory, toolchain prefix,
+local version suffix, module directories and required kernel options
+(`modules.conf`) are then taken from the sources.
+
+### Building on the device
+
+A device whose fingerprint has no release yet builds its modules itself
+with the same script:
+
+```bash
+scripts/pool-build.sh --unsigned fingerprint.txt
+```
+
+Unsigned entries are only used on the device that built them and are never
+published. The public module always comes from the independent CI build.
 
 Devices verify the signature, that the manifest starts with their own
 fingerprint, and every module checksum before loading anything:

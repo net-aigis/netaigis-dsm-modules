@@ -9,6 +9,7 @@ on:
       - "fingerprints/**"
       - "targets/**"
       - "scripts/**"
+      - "modules.conf"
       - "module-signing.pub"
       - ".github/workflows/pool.yml"
   workflow_dispatch:
@@ -58,7 +59,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/netaigis-dsm-modules
-          key: sources-${{ hashFiles('targets/*.conf') }}
+          key: sources-${{ matrix.id }}
+          restore-keys: sources-
 
       - name: Build and sign
         env:
