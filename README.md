@@ -26,7 +26,7 @@ scripts/build.sh targets/dsm-7.3-86009_v1000.conf
 ```
 
 Requirements: `bash`, `curl`, `make`, `gcc`, `bc`, `bison`, `flex`,
-`libelf` development files, `xz`, `kmod` (`modinfo`).
+`libelf` and `libssl` development files, `xz`, `kmod` (`modinfo`).
 
 The script downloads the sources into `~/.cache/netaigis-dsm-modules`,
 verifies their checksums, uses Synology's kernel configuration unchanged,

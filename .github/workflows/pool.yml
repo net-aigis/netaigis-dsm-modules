@@ -53,7 +53,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            bc bison curl flex gcc kmod libelf-dev make openssl xz-utils
+            bc bison curl flex gcc kmod libelf-dev libssl-dev make openssl xz-utils
 
       - name: Cache Synology sources
         uses: actions/cache@v6
