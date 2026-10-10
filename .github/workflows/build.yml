@@ -16,7 +16,7 @@ jobs:
     outputs:
       list: ${{ steps.list.outputs.list }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - id: list
         run: |
@@ -31,7 +31,7 @@ jobs:
       matrix:
         target: ${{ fromJSON(needs.targets.outputs.list) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -40,7 +40,7 @@ jobs:
             bc bison curl flex gcc kmod libelf-dev make xz-utils
 
       - name: Cache Synology sources
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/netaigis-dsm-modules
           key: sources-${{ matrix.target }}-${{ hashFiles(format('targets/{0}.conf', matrix.target)) }}
@@ -61,7 +61,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.target }}
           path: dist/${{ matrix.target }}
@@ -76,7 +76,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
 
@@ -92,7 +92,7 @@ jobs:
           cat SHA256SUMS
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             dist/*.tar.gz
