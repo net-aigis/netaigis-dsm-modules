@@ -51,6 +51,45 @@ build provenance attestation from GitHub Actions:
 gh attestation verify ip_set_hash_net.ko --repo <owner>/netaigis-dsm-modules
 ```
 
+## Module pool
+
+Devices look up their modules by fingerprint. A fingerprint describes only
+technical properties, never hostname, serial number or model:
+
+```text
+netaigis-kmod-fingerprint=1
+arch=x86_64
+platform=v1000
+dsm_version=7.3
+dsm_build=86009
+dsm_smallfix=4
+kernel_release=4.4.302+
+kernel_version=#86009 SMP Wed Nov 26 18:19:20 CST 2025
+vermagic=4.4.302+ SMP mod_unload
+modules=ip_set_hash_net
+```
+
+Its id is the first 16 hex characters of the file's SHA-256. Each known
+fingerprint is stored as `fingerprints/<id>.txt` (format and validation in
+`scripts/fingerprint.sh`). For every fingerprint without a release, the
+`Module pool` workflow builds the matching target, checks kernel release,
+architecture and `vermagic` against the fingerprint, signs a manifest and
+publishes the release `fp-<id>` with:
+
+- `manifest`: the fingerprint followed by `module <name> <sha256>` lines
+- `manifest.sig`: Ed25519 signature of the manifest (`module-signing.pub`)
+- the modules
+
+Devices verify the signature, that the manifest starts with their own
+fingerprint, and every module checksum before loading anything:
+
+```bash
+openssl pkeyutl -verify -pubin -inkey module-signing.pub -rawin \
+  -in manifest -sigfile manifest.sig
+```
+
+The private key exists only as the repository secret `MODULE_SIGNING_KEY`.
+
 ## License
 
 GNU General Public License version 2 (see `LICENSE`). This covers the build

@@ -1,0 +1,10 @@
+netaigis-kmod-fingerprint=1
+arch=x86_64
+platform=v1000
+dsm_version=7.3
+dsm_build=86009
+dsm_smallfix=4
+kernel_release=4.4.302+
+kernel_version=#86009 SMP Wed Nov 26 18:19:20 CST 2025
+vermagic=4.4.302+ SMP mod_unload
+modules=ip_set_hash_net

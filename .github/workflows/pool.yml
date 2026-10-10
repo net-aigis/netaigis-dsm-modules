@@ -1,0 +1,92 @@
+name: Module pool
+
+# Publishes one signed release fp-<id> per device fingerprint in
+# fingerprints/. Devices download it without login.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "fingerprints/**"
+      - "targets/**"
+      - "scripts/**"
+      - "module-signing.pub"
+      - ".github/workflows/pool.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: module-pool
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      ids: ${{ steps.plan.outputs.ids }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "ids=$(scripts/pool-plan.sh)" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: plan
+    if: needs.plan.outputs.ids != '[]'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        id: ${{ fromJSON(needs.plan.outputs.ids) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison curl flex gcc kmod libelf-dev make openssl xz-utils
+
+      - name: Cache Synology sources
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/netaigis-dsm-modules
+          key: sources-${{ hashFiles('targets/*.conf') }}
+
+      - name: Build and sign
+        env:
+          MODULE_SIGNING_KEY: ${{ secrets.MODULE_SIGNING_KEY }}
+        run: scripts/pool-build.sh "fingerprints/${{ matrix.id }}.txt"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: pool/${{ matrix.id }}/*
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id="${{ matrix.id }}"
+          {
+            echo "Kernel modules for device fingerprint \`$id\`, built by GitHub Actions"
+            echo "from Synology's GPL sources and signed with \`module-signing.pub\`."
+            echo
+            echo '```'
+            cat "pool/$id/manifest"
+            echo '```'
+          } > notes.md
+          gh release create "fp-$id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Fingerprint $id" \
+            --notes-file notes.md \
+            --latest=false \
+            pool/"$id"/*
