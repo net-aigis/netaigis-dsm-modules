@@ -48,6 +48,19 @@ jobs:
       - name: Build
         run: scripts/build.sh "targets/${{ matrix.target }}.conf"
 
+      - name: Publish checksums
+        run: |
+          while read -r sum file
+          do
+            echo "::notice title=${{ matrix.target }}::$sum  $file"
+          done < "dist/${{ matrix.target }}/SHA256SUMS"
+          {
+            echo "### ${{ matrix.target }}"
+            echo '```'
+            cat "dist/${{ matrix.target }}/SHA256SUMS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
