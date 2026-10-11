@@ -13,12 +13,14 @@ die() {
 }
 
 # Downloads once into CACHE_DIR and prints the local path. With a SHA-256
-# the file is verified on every call.
+# the file is verified on every call. The cache name includes the parent
+# directory: several platforms publish a different linux-4.4.x.txz.
 fetch() {
   local url="$1"
   local sha256="${2:-}"
+  local path="${url//%20/_}"
   local file
-  file="$CACHE_DIR/$(basename "${url//%20/_}")"
+  file="$CACHE_DIR/$(basename "$(dirname "$path")")_$(basename "$path")"
 
   mkdir -p "$CACHE_DIR"
 
