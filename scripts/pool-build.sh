@@ -54,6 +54,16 @@ trap 'rm -rf "$work_dir"' EXIT
 
 target_file="$REPO_DIR/targets/dsm-$(fp dsm_version)-$(fp dsm_build)_$(fp platform).conf"
 
+# A fixed target whose kernel release was assumed without a device must not
+# block the build for a real device.
+# shellcheck source=/dev/null
+if [[ -f "$target_file" ]] &&
+   [[ "$(source "$target_file"; echo "$KERNEL_RELEASE")" != "$(fp kernel_release)" ]]
+then
+  log "Fixed target $(basename "$target_file") has another kernel release, ignoring it"
+  target_file=""
+fi
+
 if [[ ! -f "$target_file" ]]
 then
   log "No fixed target for fingerprint $id, deriving it from Synology's archive"

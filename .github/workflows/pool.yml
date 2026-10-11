@@ -102,18 +102,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           id="${{ matrix.id }}"
+          tested="$(source "pool/$id/target.conf"; echo "${HARDWARE_TESTED:-no}")"
           {
             echo "Kernel modules for device fingerprint \`$id\`, built by GitHub Actions"
             echo "from Synology's GPL sources and signed with \`module-signing.pub\`."
             echo
+            if [[ "$tested" != yes ]]
+            then
+              echo "**Untested:** this platform has not yet been verified on a device."
+              echo
+            fi
             echo '```'
             cat "pool/$id/manifest"
             echo '```'
           } > notes.md
+          prerelease=()
+          [[ "$tested" == yes ]] || prerelease=(--prerelease)
           gh release create "fp-$id" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "Fingerprint $id" \
             --notes-file notes.md \
             --latest=false \
+            "${prerelease[@]}" \
             pool/"$id"/*

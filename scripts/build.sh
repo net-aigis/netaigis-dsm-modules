@@ -97,10 +97,13 @@ fi
 
 [[ -x "${cross_compile}gcc" ]] || die "Toolchain compiler missing: ${cross_compile}gcc"
 
+# WERROR=0: newer host compilers reject warnings in the kernel's host tools
+# (e.g. resolve_btfids in 5.10); it does not affect the modules.
 make_args=(
   -C "$kernel_src"
   ARCH="$ARCH"
   CROSS_COMPILE="$cross_compile"
+  WERROR=0
 )
 
 log "Configure kernel ($SYNOCONFIG)"
@@ -173,6 +176,7 @@ done
   echo "toolchain_sha256=$TOOLCHAIN_SHA256"
   echo "repo_commit=$(git -C "$REPO_DIR" rev-parse --verify -q HEAD 2>/dev/null || echo unknown)"
   echo "build_dir=$BUILD_DIR"
+  echo "hardware_tested=${HARDWARE_TESTED:-no}"
   for module in $MODULES
   do
     echo "vermagic_$module=$("$MODINFO" -F vermagic "$out/$module.ko")"

@@ -110,5 +110,5 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" \
-            --notes "Kernel modules built by GitHub Actions from Synology's GPL sources. Each archive contains the modules, SHA256SUMS and build-info.txt." \
+            --notes "Kernel modules built by GitHub Actions from Synology's GPL sources. Each archive contains the modules, SHA256SUMS and build-info.txt. Targets with hardware_tested=no in build-info.txt build cleanly but have not yet been verified on a device." \
             dist/*.tar.gz dist/SHA256SUMS
