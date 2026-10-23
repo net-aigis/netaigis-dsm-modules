@@ -77,19 +77,22 @@ do
     "$makefile"
 done
 
+# Falco 0.45 opens /dev/falco0. The libs default name "scap" creates
+# /dev/scap0, which that Falco does not open.
 cmake -S "$src/driver" -B "$build" \
   -DDRIVER_VERSION="$FALCO_LIBS_VERSION" \
   -DGIT_COMMIT="$FALCO_LIBS_VERSION" \
+  -DDRIVER_NAME=falco \
   -DCMAKE_MODULE_PATH="$src/cmake/modules" \
   -DBUILD_DRIVER=OFF \
   -DENABLE_DKMS=OFF
 
 # The generated Makefile has no "modules" target of its own. "all" calls
-# the kernel build, which is what compiles scap.ko.
+# the kernel build, which is what compiles falco.ko.
 make -C "$build/src" -j"$(nproc)" \
   KERNELDIR="$kernel_src" \
   ARCH="$arch" \
   CROSS_COMPILE="$cross_compile"
 
-[[ -f "$build/src/scap.ko" ]] || die "scap.ko was not built"
-cp "$build/src/scap.ko" "$out_dir/scap.ko"
+[[ -f "$build/src/falco.ko" ]] || die "falco.ko was not built"
+cp "$build/src/falco.ko" "$out_dir/falco.ko"

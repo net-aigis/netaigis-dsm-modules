@@ -159,7 +159,7 @@ mkdir -p "$extra"
 for module in $MODULES
 do
   [[ "$(module_field "$module" 2)" == "out-of-tree" ]] || continue
-  [[ "$module" == "scap" ]] || die "No out-of-tree builder for $module"
+  [[ "$module" == "falco" ]] || die "No out-of-tree builder for $module"
   log "Build Falco kernel module"
   "$REPO_DIR/scripts/falco-kmod.sh" "$kernel_src" "$ARCH" "$cross_compile" "$extra"
 done
