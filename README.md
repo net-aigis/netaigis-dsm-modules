@@ -11,9 +11,9 @@ published.
 
 | Target | DSM | Platform | Kernel | Modules | Tested on a device |
 |---|---|---|---|---|---|
-| `dsm-7.3-86009_v1000` | 7.3-86009 | v1000 (e.g. DS2422+) | 4.4.302+ | `ip_set_hash_net` | yes |
-| `dsm-7.3-86009_rtd1619b` | 7.3-86009 | rtd1619b (e.g. DS124, DS223, DS423) | 5.10.55+ | all ipset modules | no |
-| `dsm-7.3-86009_armada37xx` | 7.3-86009 | armada37xx (e.g. DS120j, DS220j) | 4.4.302+ | all ipset modules | no |
+| `dsm-7.3-86009_v1000` | 7.3-86009 | v1000 (e.g. DS2422+) | 4.4.302+ | `ip_set_hash_net`, Falco `scap` | yes |
+| `dsm-7.3-86009_rtd1619b` | 7.3-86009 | rtd1619b (e.g. DS124, DS223, DS423) | 5.10.55+ | all ipset modules, Falco `scap` | no |
+| `dsm-7.3-86009_armada37xx` | 7.3-86009 | armada37xx (e.g. DS120j, DS220j) | 4.4.302+ | all ipset modules, Falco `scap` | no |
 
 Each target is described in `targets/<target>.conf`: download URLs and
 SHA-256 checksums of the Synology sources, kernel configuration, expected

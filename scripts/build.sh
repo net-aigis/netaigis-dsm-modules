@@ -46,14 +46,26 @@ module_field() {
   echo "$value"
 }
 
+# out-of-tree modules (Falco's scap) are not directories in the kernel tree
+# and have no CONFIG_* option.
+in_tree_modules() {
+  local module dir
+  for module in $MODULES
+  do
+    dir="$(module_field "$module" 2)"
+    [[ "$dir" == "out-of-tree" ]] && continue
+    printf '%s\n' "$module"
+  done
+}
+
 if [[ -z "${MODULE_DIR:-}" ]]
 then
-  MODULE_DIR="$(for module in $MODULES; do module_field "$module" 2; done | sort -u | xargs)"
+  MODULE_DIR="$(for module in $(in_tree_modules); do module_field "$module" 2; done | sort -u | xargs)"
 fi
 
 if [[ -z "${REQUIRED_CONFIG:-}" ]]
 then
-  REQUIRED_CONFIG="$(for module in $MODULES; do echo "$(module_field "$module" 3)=m"; done | xargs)"
+  REQUIRED_CONFIG="$(for module in $(in_tree_modules); do echo "$(module_field "$module" 3)=m"; done | xargs)"
 fi
 
 kernel_archive="$(fetch "$KERNEL_URL" "$KERNEL_SHA256")"
@@ -141,6 +153,17 @@ do
   make -j"$(nproc)" "${make_args[@]}" M="$dir" modules
 done
 
+extra="$target_build/extra"
+rm -rf "$extra"
+mkdir -p "$extra"
+for module in $MODULES
+do
+  [[ "$(module_field "$module" 2)" == "out-of-tree" ]] || continue
+  [[ "$module" == "scap" ]] || die "No out-of-tree builder for $module"
+  log "Build Falco kernel module"
+  "$REPO_DIR/scripts/falco-kmod.sh" "$kernel_src" "$ARCH" "$cross_compile" "$extra"
+done
+
 out="$DIST_DIR/$TARGET"
 rm -rf "$out"
 mkdir -p "$out"
@@ -149,10 +172,15 @@ log "Verify and collect modules"
 for module in $MODULES
 do
   ko=""
-  for dir in $MODULE_DIR
-  do
-    [[ -f "$kernel_src/$dir/$module.ko" ]] && ko="$kernel_src/$dir/$module.ko"
-  done
+  if [[ "$(module_field "$module" 2)" == "out-of-tree" ]]
+  then
+    [[ -f "$extra/$module.ko" ]] && ko="$extra/$module.ko"
+  else
+    for dir in $MODULE_DIR
+    do
+      [[ -f "$kernel_src/$dir/$module.ko" ]] && ko="$kernel_src/$dir/$module.ko"
+    done
+  fi
   [[ -n "$ko" ]] || die "Module not built: $module.ko"
 
   vermagic="$("$MODINFO" -F vermagic "$ko")"
