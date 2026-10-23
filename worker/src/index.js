@@ -29,6 +29,7 @@ const FINGERPRINT_FIELDS = [
 // Modules listed in modules.conf; nothing else can be built.
 const KNOWN_MODULES = new Set([
   "nfnetlink", "ip_set", "ip_set_hash_ip", "ip_set_hash_net", "x_tables", "xt_set",
+  "scap",
 ]);
 
 const MAX_BODY = 2048;
