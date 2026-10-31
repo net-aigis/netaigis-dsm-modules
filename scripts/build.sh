@@ -135,6 +135,14 @@ fi
 
 make_args+=(LOCALVERSION="$LOCALVERSION")
 
+# NETAIGIS_XT_U32_BUILD_OVERRIDE
+# xt_u32 is absent from the stock Synology kernel config. Build it as
+# a separate kernel module; do not demand its presence in the stock config.
+if [[ " ${MODULES} " == *" xt_u32 "* ]]; then
+  [[ -f "$KERNEL_DIR/net/netfilter/xt_u32.c" ]] || die "Kernel source xt_u32.c is missing"
+  REQUIRED_CONFIG="${REQUIRED_CONFIG//CONFIG_NETFILTER_XT_MATCH_U32=m/}"
+fi
+
 for option in $REQUIRED_CONFIG
 do
   grep -qx "$option" "$kernel_src/.config" ||
@@ -150,7 +158,11 @@ make -j"$(nproc)" "${make_args[@]}" modules_prepare
 for dir in $MODULE_DIR
 do
   log "Build modules in $dir"
-  make -j"$(nproc)" "${make_args[@]}" M="$dir" modules
+  if [[ " ${MODULES} " == *" xt_u32 "* ]]; then
+    make -j"$(nproc)" "${make_args[@]}" CONFIG_NETFILTER_XT_MATCH_U32=m M="$dir" modules
+  else
+    make -j"$(nproc)" "${make_args[@]}" M="$dir" modules
+  fi
 done
 
 extra="$target_build/extra"
