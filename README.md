@@ -9,24 +9,17 @@ published.
 
 ## Targets
 
-| Target | DSM | Platform | Kernel | Modules | Tested on a device |
-|---|---|---|---|---|---|
-| `v1000-k4.4.302_plus` | 7.3-86009 | v1000 (e.g. DS2422+) | 4.4.302+ | `ip_set_hash_net`, Falco `falco` | yes |
-| `rtd1619b-k5.10.55_plus` | 7.3-86009 | rtd1619b (e.g. DS124, DS223, DS423) | 5.10.55+ | all ipset modules, Falco `falco` | no |
-| `armada37xx-k4.4.302_plus` | 7.3-86009 | armada37xx (e.g. DS120j, DS220j) | 4.4.302+ | all ipset modules, Falco `falco` | no |
+Kernel module build targets are keyed by **Synology platform and kernel release**, not by DSM version. DSM build versions are compatibility metadata used to select the original Synology source archives.
 
-Each target is described in `targets/<target>.conf`: download URLs and
-SHA-256 checksums of the Synology sources, kernel configuration, expected
-kernel release and the modules to publish.
+| Kernel target | Platform | Kernel release | Modules built successfully in CI | Tested on device |
+| --- | --- | --- | --- | --- |
+| `v1000-k4.4.302_plus` | v1000 (e.g. DS2422+) | `4.4.302+` | `falco.ko`, `ip_set_hash_net.ko`, `xt_u32.ko` | Existing `ip_set_hash_net` deployment verified; `xt_u32` not yet device-tested |
+| `armada37xx-k4.4.302_plus` | armada37xx (e.g. DS120j, DS220j) | `4.4.302+` | `falco.ko`, `ip_set.ko`, `ip_set_hash_ip.ko`, `ip_set_hash_net.ko`, `nfnetlink.ko`, `x_tables.ko`, `xt_set.ko`, `xt_u32.ko` | Not confirmed |
+| `rtd1619b-k5.10.55_plus` | rtd1619b (e.g. DS124, DS223, DS423) | `5.10.55+` | `falco.ko`, `ip_set.ko`, `ip_set_hash_ip.ko`, `ip_set_hash_net.ko`, `nfnetlink.ko`, `x_tables.ko`, `xt_set.ko`, `xt_u32.ko` | Not confirmed |
 
-`HARDWARE_TESTED="yes"` marks targets whose modules have been loaded on a
-real device. The ARM targets only prove that Synology's sources build; their
-kernel release is assumed. Pool releases for untested targets are published
-as pre-releases with a note; devices load them all the same. Once a device
-confirms a platform, set `HARDWARE_TESTED="yes"` and clear the pre-release
-flag of its pool releases. A fixed target whose kernel release does not
-match a reported fingerprint is ignored, and the target is derived from
-Synology's archive instead.
+All 19 modules across these three kernel targets were built in [CI run 41238367638](https://github.com/net-aigis/netaigis-dsm-modules/actions/runs/41238367638) at commit `a28018499763e210473c39013a2fa3151f08d0c9`. A CI build does not establish that a newly introduced module loads or functions on real hardware.
+
+Each build target has a `targets/<target>.conf` with the Synology source archives, checksums, kernel configuration, toolchain and module list. `targets/kernel-index.tsv` records the known module sets; `targets/kernel-compatibility.tsv` maps known DSM releases to the canonical kernel targets. `HARDWARE_TESTED` is historical target-level status, not proof of testing for every module added later. Equal kernel release strings alone do not establish identical ABI or configuration.
 
 ## Build
 
@@ -53,6 +46,9 @@ build the target locally and compare `dist/<target>/SHA256SUMS` with the
 `SHA256SUMS` in the release archive.
 
 ## Releases
+
+**Current build status:** The kernel-based module matrix and the unknown-fingerprint fallback were verified in [GitHub Actions run 41238367638](https://github.com/net-aigis/netaigis-dsm-modules/actions/runs/41238367638) at commit `a280184`. These are CI artifacts, **not** assets of the older `1.0.0` GitHub release. A new signed versioned release requires its own tag and successful release job.
+
 
 A version tag `MAJOR.MINOR.PATCH` (for example `1.0.0`) publishes a GitHub release with one archive per target and a
 `SHA256SUMS` file over all archives. Archives and modules carry a signed
@@ -92,12 +88,7 @@ publishes the release `fp-<id>` with:
 - `target.conf`: the Synology sources used, with their SHA-256
 - the modules
 
-The target is `targets/dsm-<version>-<build>_<platform>.conf` if present.
-Otherwise `scripts/target-gen.sh` derives it from Synology's archive: the
-GPL kernel source and toolchain of the fingerprint's DSM build, platform and
-architecture (`x86_64`, `aarch64`). Kernel directory, toolchain prefix,
-local version suffix, module directories and required kernel options
-(`modules.conf`) are then taken from the sources.
+Known DSM fingerprints resolve through `scripts/kernel-target-resolve.sh` and `targets/kernel-compatibility.tsv` to their kernel/platform target. Unknown fingerprints use the restored Synology source-based target generation in `scripts/target-gen.sh`: the generated configuration is named using the actual `KERNEL_RELEASE` and platform through `scripts/kernel-target-name.sh` and `scripts/kernel-target-promote.sh`. The existing source/toolchain and `modules.conf` requirements remain authoritative. This fallback was tested locally with a synthetic generated configuration; an unknown real Synology fingerprint has not yet been validated end-to-end in CI. Unknown releases must never be silently assigned a verified target by kernel name alone.
 
 ### Building on the device
 
