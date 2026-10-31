@@ -139,7 +139,10 @@ make_args+=(LOCALVERSION="$LOCALVERSION")
 # xt_u32 is absent from the stock Synology kernel config. Build it as
 # a separate kernel module; do not demand its presence in the stock config.
 if [[ " ${MODULES} " == *" xt_u32 "* ]]; then
-  bash "$REPO_DIR/scripts/xt-u32-prepare.sh" "$kernel_src"
+  [[ -s "$kernel_src/net/netfilter/xt_u32.c" ]] || die "Synology-Kernelquelle xt_u32.c fehlt"
+  [[ -s "$kernel_src/include/uapi/linux/netfilter/xt_u32.h" ]] || die "Synology-Kernelheader xt_u32.h fehlt"
+  grep -Eq '^[[:space:]]*obj-\$\(CONFIG_NETFILTER_XT_MATCH_U32\)[[:space:]]*\+=[[:space:]]*xt_u32\.o([[:space:]]|$)' \
+    "$kernel_src/net/netfilter/Makefile" || die "Synology-Kbuildregel fuer xt_u32 fehlt"
   REQUIRED_CONFIG="${REQUIRED_CONFIG//CONFIG_NETFILTER_XT_MATCH_U32=m/}"
 fi
 

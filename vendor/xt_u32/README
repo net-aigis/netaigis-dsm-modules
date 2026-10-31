@@ -1,7 +1,0 @@
-xt_u32 source: Linux v4.4.302 commit a09b2d8f61ea0e9ae735c400399b97966a9418d6
-Upstream blob: a95b50342dbb1d1f1a43663e46104e031f4f295a
-Header blob: 04d1bfea03c2cbd9ba4a9c2575e44ef1e9766cd1
-Security backports:
-- skb_copy_bits failure: avoid BUG(), request hotdrop
-- reject shift counts >= 32 in xt_match checkentry
-Module is built in the EXISTING Synology target kernel CI, not on the NAS.
