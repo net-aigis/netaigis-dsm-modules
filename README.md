@@ -11,9 +11,9 @@ published.
 
 | Target | DSM | Platform | Kernel | Modules | Tested on a device |
 |---|---|---|---|---|---|
-| `dsm-7.3-86009_v1000` | 7.3-86009 | v1000 (e.g. DS2422+) | 4.4.302+ | `ip_set_hash_net`, Falco `falco` | yes |
-| `dsm-7.3-86009_rtd1619b` | 7.3-86009 | rtd1619b (e.g. DS124, DS223, DS423) | 5.10.55+ | all ipset modules, Falco `falco` | no |
-| `dsm-7.3-86009_armada37xx` | 7.3-86009 | armada37xx (e.g. DS120j, DS220j) | 4.4.302+ | all ipset modules, Falco `falco` | no |
+| `v1000-k4.4.302_plus` | 7.3-86009 | v1000 (e.g. DS2422+) | 4.4.302+ | `ip_set_hash_net`, Falco `falco` | yes |
+| `rtd1619b-k5.10.55_plus` | 7.3-86009 | rtd1619b (e.g. DS124, DS223, DS423) | 5.10.55+ | all ipset modules, Falco `falco` | no |
+| `armada37xx-k4.4.302_plus` | 7.3-86009 | armada37xx (e.g. DS120j, DS220j) | 4.4.302+ | all ipset modules, Falco `falco` | no |
 
 Each target is described in `targets/<target>.conf`: download URLs and
 SHA-256 checksums of the Synology sources, kernel configuration, expected
@@ -33,7 +33,7 @@ Synology's archive instead.
 The same script runs locally and in CI:
 
 ```bash
-scripts/build.sh targets/dsm-7.3-86009_v1000.conf
+scripts/build.sh targets/v1000-k4.4.302_plus.conf
 ```
 
 Requirements: `bash`, `curl`, `make`, `gcc`, `bc`, `bison`, `flex`,

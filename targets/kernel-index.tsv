@@ -1,0 +1,4 @@
+# target	platform	kernel-release	vermagic	modules
+armada37xx-k4.4.302_plus	armada37xx	4.4.302+	4.4.302+ SMP mod_unload aarch64	falco.ko,ip_set.ko,ip_set_hash_ip.ko,ip_set_hash_net.ko,nfnetlink.ko,x_tables.ko,xt_set.ko,xt_u32.ko
+rtd1619b-k5.10.55_plus	rtd1619b	5.10.55+	5.10.55+ SMP mod_unload aarch64	falco.ko,ip_set.ko,ip_set_hash_ip.ko,ip_set_hash_net.ko,nfnetlink.ko,x_tables.ko,xt_set.ko,xt_u32.ko
+v1000-k4.4.302_plus	v1000	4.4.302+	4.4.302+ SMP mod_unload 	falco.ko,ip_set_hash_net.ko,xt_u32.ko

@@ -52,7 +52,7 @@ work_dir="$(mktemp -d)"
 key_file="$work_dir/signing.key"
 trap 'rm -rf "$work_dir"' EXIT
 
-target_file="$REPO_DIR/targets/dsm-$(fp dsm_version)-$(fp dsm_build)_$(fp platform).conf"
+target_file="$REPO_DIR/targets/$(bash "$REPO_DIR/scripts/kernel-target-resolve.sh" "dsm-$(fp dsm_version)-$(fp dsm_build)_$(fp platform)").conf"
 
 # A fixed target whose kernel release was assumed without a device must not
 # block the build for a real device.

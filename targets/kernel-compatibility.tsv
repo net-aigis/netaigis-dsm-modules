@@ -1,0 +1,4 @@
+# legacy-dsm-target	kernel-target
+dsm-7.3-86009_armada37xx	armada37xx-k4.4.302_plus
+dsm-7.3-86009_rtd1619b	rtd1619b-k5.10.55_plus
+dsm-7.3-86009_v1000	v1000-k4.4.302_plus
