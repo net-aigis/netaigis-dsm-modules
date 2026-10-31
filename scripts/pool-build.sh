@@ -52,7 +52,20 @@ work_dir="$(mktemp -d)"
 key_file="$work_dir/signing.key"
 trap 'rm -rf "$work_dir"' EXIT
 
-target_file="$REPO_DIR/targets/$(bash "$REPO_DIR/scripts/kernel-target-resolve.sh" "dsm-$(fp dsm_version)-$(fp dsm_build)_$(fp platform)").conf"
+# Known DSM aliases use the verified canonical kernel target. Unknown
+# fingerprints must be derived by the existing Synology source generator.
+_netaigis_alias="dsm-$(fp dsm_version)-$(fp dsm_build)_$(fp platform)"
+if _netaigis_id="$(bash "$REPO_DIR/scripts/kernel-target-resolve.sh" "$_netaigis_alias" 2>/dev/null)"; then
+  target_file="$REPO_DIR/targets/${_netaigis_id}.conf"
+else
+  _netaigis_id="$(bash "$REPO_DIR/scripts/kernel-target-name.sh" "$(fp platform)" "$(fp kernel_release)")"
+  target_file="$REPO_DIR/targets/${_netaigis_id}.conf"
+  # Same kernel release does NOT establish unchanged ABI/source compatibility.
+  [[ ! -e "$target_file" ]] || {
+    printf 'ABBRUCH: Unbekannter DSM-Alias %s trifft existierendes Kernel-Target %s; erst ABI pruefen\n' "$_netaigis_alias" "$_netaigis_id" >&2
+    exit 2
+  }
+fi
 
 # A fixed target whose kernel release was assumed without a device must not
 # block the build for a real device.
