@@ -13,7 +13,7 @@ Kernel module build targets are keyed by **Synology platform and kernel release*
 
 | Kernel target | Platform | Kernel release | Modules built successfully in CI | Tested on device |
 | --- | --- | --- | --- | --- |
-| `v1000-k4.4.302_plus` | v1000 (e.g. DS2422+) | `4.4.302+` | `falco.ko`, `ip_set_hash_net.ko`, `xt_u32.ko` | Existing `ip_set_hash_net` deployment verified; `xt_u32` not yet device-tested |
+| `v1000-k4.4.302_plus` | v1000 (e.g. DS2422+) | `4.4.302+` | `falco.ko`, `ip_set_hash_net.ko`, `xt_u32.ko` | `ip_set_hash_net` and `falco` verified; `xt_u32` for CVE-2026-98432 pending device load test |
 | `armada37xx-k4.4.302_plus` | armada37xx (e.g. DS120j, DS220j) | `4.4.302+` | `falco.ko`, `ip_set.ko`, `ip_set_hash_ip.ko`, `ip_set_hash_net.ko`, `nfnetlink.ko`, `x_tables.ko`, `xt_set.ko`, `xt_u32.ko` | Not confirmed |
 | `rtd1619b-k5.10.55_plus` | rtd1619b (e.g. DS124, DS223, DS423) | `5.10.55+` | `falco.ko`, `ip_set.ko`, `ip_set_hash_ip.ko`, `ip_set_hash_net.ko`, `nfnetlink.ko`, `x_tables.ko`, `xt_set.ko`, `xt_u32.ko` | Not confirmed |
 
@@ -47,10 +47,9 @@ build the target locally and compare `dist/<target>/SHA256SUMS` with the
 
 ## Releases
 
-**Current build status:** The kernel-based module matrix and the unknown-fingerprint fallback were verified in [GitHub Actions run 41238367638](https://github.com/net-aigis/netaigis-dsm-modules/actions/runs/41238367638) at commit `a280184`. These are CI artifacts, **not** assets of the older `1.0.0` GitHub release. A new signed versioned release requires its own tag and successful release job.
+**Current build status:** The kernel-based module matrix (including `xt_u32` for CVE-2026-98432) and the unknown-fingerprint fallback were verified in [GitHub Actions run 41238367638](https://github.com/net-aigis/netaigis-dsm-modules/actions/runs/41238367638) at commit `a280184`. Release `1.0.0` only shipped `ip_set_hash_net` for one v1000 target. Tag `1.1.0` publishes the full matrix.
 
-
-A version tag `MAJOR.MINOR.PATCH` (for example `1.0.0`) publishes a GitHub release with one archive per target and a
+A version tag `MAJOR.MINOR.PATCH` (for example `1.1.0`) publishes a GitHub release with one archive per target and a
 `SHA256SUMS` file over all archives. Archives and modules carry a signed
 build provenance attestation from GitHub Actions:
 
@@ -73,12 +72,14 @@ dsm_smallfix=4
 kernel_release=4.4.302+
 kernel_version=#86009 SMP Wed Nov 26 18:19:20 CST 2025
 vermagic=4.4.302+ SMP mod_unload
-modules=ip_set_hash_net
+modules=ip_set_hash_net xt_u32 falco
 ```
 
 Its id is the first 16 hex characters of the file's SHA-256. Each known
 fingerprint is stored as `fingerprints/<id>.txt` (format and validation in
-`scripts/fingerprint.sh`). For every fingerprint without a release, the
+`scripts/fingerprint.sh`). Fingerprint `00793922c2599ac1` is the DS2422+
+(v1000) entry that requests `xt_u32` together with `ip_set_hash_net` and
+`falco`. For every fingerprint without a release, the
 `Module pool` workflow builds the matching target, checks kernel release,
 architecture and `vermagic` against the fingerprint, signs a manifest and
 publishes the release `fp-<id>` with:
