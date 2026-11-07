@@ -7,6 +7,11 @@ The modules are built exclusively by GitHub Actions from Synology's original
 GPL kernel sources and toolchain. Modules built on customer devices are never
 published.
 
+## Support
+
+- [GitHub Sponsors](https://github.com/sponsors/net-aigis?metadata_project=netaigis-dsm-modules)
+- [PayPal](https://www.paypal.com/ncp/payment/JG87QKC2CV7KU)
+
 ## Targets
 
 Kernel module build targets are keyed by **Synology platform and kernel release**, not by DSM version. DSM build versions are compatibility metadata used to select the original Synology source archives.
