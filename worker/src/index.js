@@ -12,44 +12,67 @@
 //   202 {"id", "status": "queued"}     fingerprint known, build pending
 //   400 / 405 / 413 / 429 / 502        {"error"}
 
-// Same keys, order and patterns as scripts/fingerprint.sh.
-const FINGERPRINT_FIELDS = [
+// Field patterns shared by both accepted layouts.
+// Layout A (current DSM loader): omits dsm_smallfix — Synology security
+// updates bump smallfix without changing the kernel ABI.
+// Layout B (pool fingerprints / scripts/fingerprint.sh): includes dsm_smallfix.
+const FIELD_COMMON_HEAD = [
   ["netaigis-kmod-fingerprint", /^1$/],
   ["arch", /^(x86_64|aarch64)$/],
   ["platform", /^[a-z0-9]{1,32}$/],
   ["dsm_version", /^[0-9]{1,2}\.[0-9]{1,2}$/],
   ["dsm_build", /^[0-9]{1,6}$/],
-  ["dsm_smallfix", /^[0-9]{1,3}$/],
+];
+const FIELD_SMALLFIX = ["dsm_smallfix", /^[0-9]{1,3}$/];
+const FIELD_COMMON_TAIL = [
   ["kernel_release", /^[0-9][0-9a-z.+_-]{0,63}$/],
   ["kernel_version", /^#[0-9A-Za-z :+._-]{1,127}$/],
   ["vermagic", /^[0-9A-Za-z .+_-]{1,127}$/],
   ["modules", /^[a-z0-9_]{1,32}( [a-z0-9_]{1,32}){0,15}$/],
 ];
 
+const FINGERPRINT_FIELDS_ABI = [...FIELD_COMMON_HEAD, ...FIELD_COMMON_TAIL];
+const FINGERPRINT_FIELDS_LEGACY = [
+  ...FIELD_COMMON_HEAD,
+  FIELD_SMALLFIX,
+  ...FIELD_COMMON_TAIL,
+];
+
 // Modules listed in modules.conf; nothing else can be built.
 const KNOWN_MODULES = new Set([
   "nfnetlink", "ip_set", "ip_set_hash_ip", "ip_set_hash_net", "x_tables", "xt_set",
-  "scap", "falco",
+  "xt_u32", "scap", "falco",
 ]);
 
 const MAX_BODY = 2048;
 
-export function validateFingerprint(text) {
-  if (!text.endsWith("\n")) return "missing final newline";
-
-  const lines = text.slice(0, -1).split("\n");
-  if (lines.length !== FINGERPRINT_FIELDS.length) {
-    return `expected ${FINGERPRINT_FIELDS.length} lines`;
-  }
-
-  for (const [i, [key, pattern]] of FINGERPRINT_FIELDS.entries()) {
+function validateFingerprintFields(lines, fields) {
+  for (const [i, [key, pattern]] of fields.entries()) {
     const line = lines[i];
     const eq = line.indexOf("=");
     if (eq < 0 || line.slice(0, eq) !== key) return `line ${i + 1} must be ${key}=`;
     if (!pattern.test(line.slice(eq + 1))) return `invalid value for ${key}`;
   }
+  return null;
+}
 
-  const modules = lines[FINGERPRINT_FIELDS.length - 1].slice("modules=".length).split(" ");
+export function validateFingerprint(text) {
+  if (!text.endsWith("\n")) return "missing final newline";
+
+  const lines = text.slice(0, -1).split("\n");
+  let fields = null;
+  if (lines.length === FINGERPRINT_FIELDS_ABI.length) {
+    fields = FINGERPRINT_FIELDS_ABI;
+  } else if (lines.length === FINGERPRINT_FIELDS_LEGACY.length) {
+    fields = FINGERPRINT_FIELDS_LEGACY;
+  } else {
+    return `expected ${FINGERPRINT_FIELDS_ABI.length} or ${FINGERPRINT_FIELDS_LEGACY.length} lines`;
+  }
+
+  const fieldProblem = validateFingerprintFields(lines, fields);
+  if (fieldProblem) return fieldProblem;
+
+  const modules = lines[fields.length - 1].slice("modules=".length).split(" ");
   const unknown = modules.find((m) => !KNOWN_MODULES.has(m));
   if (unknown) return `unknown module ${unknown}`;
   if (new Set(modules).size !== modules.length) return "duplicate module";

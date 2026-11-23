@@ -52,7 +52,7 @@ test("valid fingerprint passes", () => {
 
 test("invalid fingerprints are rejected", () => {
   assert.match(validateFingerprint(FINGERPRINT.trimEnd()), /final newline/);
-  assert.match(validateFingerprint(FINGERPRINT + "x=1\n"), /expected 10 lines/);
+  assert.match(validateFingerprint(FINGERPRINT + "x=1\n"), /expected 9 or 10 lines/);
   assert.match(validateFingerprint(FINGERPRINT.replace("platform=", "model=")), /platform=/);
   assert.match(validateFingerprint(FINGERPRINT.replace("arch=x86_64", "arch=mips")), /arch/);
   assert.match(validateFingerprint(FINGERPRINT.replace("modules=ip_set_hash_net", "modules=evil")),
@@ -60,6 +60,42 @@ test("invalid fingerprints are rejected", () => {
   assert.match(validateFingerprint(FINGERPRINT.replace("dsm_build=86009", "dsm_build=86009;rm")), /dsm_build/);
 });
 
+// Productive DS2422+ loader fingerprint (no dsm_smallfix) — was HTTP 400.
+const FP_ABI = [
+  "netaigis-kmod-fingerprint=1",
+  "arch=x86_64",
+  "platform=v1000",
+  "dsm_version=7.3",
+  "dsm_build=86009",
+  "kernel_release=4.4.302+",
+  "kernel_version=#86009 SMP Wed Nov 26 18:19:20 CST 2025",
+  "vermagic=4.4.302+ SMP mod_unload",
+  "modules=ip_set_hash_net xt_u32 falco",
+  "",
+].join("\n");
+
+test("ABI fingerprint without dsm_smallfix and with xt_u32 passes", () => {
+  assert.equal(validateFingerprint(FP_ABI), null);
+});
+
+test("legacy fingerprint with dsm_smallfix and xt_u32 still passes", () => {
+  const legacy = readFileSync(
+    new URL("../../fingerprints/00793922c2599ac1.txt", import.meta.url),
+    "utf8",
+  );
+  assert.equal(validateFingerprint(legacy), null);
+});
+
+test("POST ABI fingerprint queues instead of 400", async () => {
+  const calls = mockGitHub(new Set());
+  const res = await report(FP_ABI);
+  assert.equal(res.status, 202);
+  const body = await res.json();
+  assert.equal(body.status, "queued");
+  assert.equal(body.id, await fingerprintId(FP_ABI));
+  assert.equal(body.id, "dbf1b5e24dd81a0c");
+  assert.ok(calls.some((c) => c.method === "PUT"));
+});
 test("new fingerprint is committed and queued", async () => {
   const calls = mockGitHub(new Set());
   const res = await report(FINGERPRINT);
